@@ -176,6 +176,7 @@
     .artifact-popup { text-align: center; padding: 6px; min-width: 140px; }
     .artifact-popup .emoji { font-size: 2.2rem; }
     .artifact-popup .name { font-weight: 600; margin: 4px 0; font-size: 0.95rem; }
+    .artifact-popup .site-name { font-size: 0.7rem; color: #c9a227; margin: 2px 0 4px 0; }
     .artifact-popup .buried-hint { font-size: 0.75rem; color: #a08060; font-style: italic; }
     .artifact-popup .distance { font-size: 0.75rem; color: #888; margin: 4px 0; }
     .collect-btn {
@@ -193,52 +194,387 @@
     .collect-btn:hover { transform: scale(1.05); }
     .collect-btn:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
     
-    /* Cleaning */
-    .cleaning-overlay {
+    /* Excavation System */
+    .excavation-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 12, 8, 0.98);
+      background: linear-gradient(180deg, #1a1510 0%, #0d0a07 100%);
       z-index: 3000;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
+      padding: 10px;
+      overflow-y: auto;
       animation: fadeIn 0.3s ease-out;
     }
-    .cleaning-title { color: #c9a227; font-size: 1.2rem; margin-bottom: 10px; }
-    .cleaning-instructions { color: #aaa; font-size: 0.85rem; margin-bottom: 20px; }
-    .cleaning-area {
-      position: relative;
-      width: 280px;
-      height: 280px;
-      background: linear-gradient(145deg, #C4A77D, #A08060);
-      border-radius: 20px;
-      overflow: hidden;
-      cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><text y="20" font-size="20">🖌️</text></svg>') 16 16, pointer;
-      touch-action: none;
+    .excavation-header { text-align: center; margin-bottom: 8px; }
+    .excavation-phase {
+      color: #c9a227;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 3px;
     }
-    #dirtCanvas { 
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      width: 100%; 
-      height: 100%; 
-      border-radius: 20px; 
-      z-index: 2;
+    .excavation-title { color: #fff; font-size: 1rem; margin-bottom: 3px; }
+    .excavation-instructions { color: #888; font-size: 0.75rem; }
+    
+    .dig-site-container { position: relative; margin: 8px 0; }
+    .dig-site {
+      width: 300px;
+      height: 300px;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      border: 3px solid #5d4037;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.5);
+    }
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .grid-overlay.visible {
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .unit-label {
+      position: absolute;
+      color: rgba(255,255,255,0.6);
+      font-size: 9px;
+      font-family: monospace;
+      background: rgba(0,0,0,0.5);
+      padding: 1px 3px;
+      border-radius: 2px;
     }
     .artifact-reveal { 
       position: absolute; 
       top: 50%; 
       left: 50%; 
       transform: translate(-50%, -50%); 
-      font-size: 5rem; 
+      font-size: 4.5rem; 
       z-index: 1;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.5s;
+      filter: drop-shadow(0 0 20px rgba(201, 162, 39, 0.8));
     }
-    .cleaning-progress { width: 280px; height: 12px; background: #333; border-radius: 6px; margin-top: 20px; overflow: hidden; }
-    .cleaning-progress-bar { height: 100%; background: linear-gradient(90deg, #c9a227, #f0d878); transition: width 0.1s; }
-    .cleaning-progress-label { color: #888; font-size: 0.8rem; margin-top: 8px; }
+    .artifact-reveal.visible { opacity: 1; }
+    #excavationCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 10;
+      touch-action: none;
+    }
+    
+    .tool-belt {
+      display: flex;
+      gap: 6px;
+      margin: 8px 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .tool-btn {
+      background: rgba(93, 64, 55, 0.8);
+      border: 2px solid #8d6e63;
+      color: #d7ccc8;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      min-width: 55px;
+    }
+    .tool-btn:hover { background: rgba(141, 110, 99, 0.9); }
+    .tool-btn.active { 
+      border-color: #c9a227; 
+      background: rgba(201, 162, 39, 0.3);
+      color: #c9a227;
+      box-shadow: 0 0 15px rgba(201, 162, 39, 0.4);
+    }
+    .tool-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+    .tool-btn .tool-icon { font-size: 1.2rem; }
+    .tool-btn .tool-name { font-size: 0.6rem; }
+    
+    .stratigraphy-panel {
+      background: rgba(0,0,0,0.6);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 8px 0;
+      width: 300px;
+    }
+    .strat-title {
+      color: #c9a227;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .layer-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 0.7rem;
+      opacity: 0.4;
+      transition: all 0.3s;
+    }
+    .layer-row.active { opacity: 1; transform: translateX(5px); }
+    .layer-row.complete { opacity: 0.6; }
+    .layer-row.complete .layer-name::after { content: ' ✓'; color: #4CAF50; }
+    .layer-color {
+      width: 18px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .layer-name { color: #ccc; flex: 1; }
+    .layer-depth { color: #666; font-size: 0.6rem; }
+    
+    .excavation-progress { width: 300px; margin: 8px 0; }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .progress-bar-bg {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8d6e63, #c9a227);
+      transition: width 0.3s;
+    }
+    
+    .field-journal {
+      background: linear-gradient(135deg, #fffef5 0%, #f5f0e0 100%);
+      border-radius: 5px;
+      padding: 10px;
+      margin: 8px 0;
+      width: 300px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.65rem;
+      color: #333;
+      box-shadow: 3px 3px 15px rgba(0,0,0,0.4);
+      transform: rotate(-0.5deg);
+      border: 1px solid #d4c4a8;
+    }
+    .journal-header {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #8b7355;
+      padding-bottom: 5px;
+      margin-bottom: 6px;
+    }
+    .journal-title { font-weight: bold; color: #5d4037; }
+    .journal-date { color: #888; font-size: 0.6rem; }
+    .journal-entry {
+      margin: 4px 0;
+      padding-left: 8px;
+      border-left: 2px solid #c9a227;
+      color: #444;
+    }
+    .journal-entry.new { animation: newEntry 0.5s ease-out; }
+    @keyframes newEntry {
+      from { background: rgba(201, 162, 39, 0.3); }
+      to { background: transparent; }
+    }
+    
+    /* Discovery Effects */
+    .discovery-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, #1a1510 0%, #000 100%);
+      z-index: 4000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: discoveryFadeIn 1s ease-out;
+    }
+    @keyframes discoveryFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .discovery-glow {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(201, 162, 39, 0.5) 0%, rgba(201, 162, 39, 0.1) 40%, transparent 70%);
+      animation: pulseGlow 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.4); opacity: 1; }
+    }
+    
+    .discovery-rays {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: conic-gradient(from 0deg, transparent, rgba(201, 162, 39, 0.1), transparent, rgba(201, 162, 39, 0.1), transparent, rgba(201, 162, 39, 0.1), transparent, rgba(201, 162, 39, 0.1), transparent);
+      animation: rotateRays 20s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes rotateRays { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    
+    .discovery-particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    
+    .discovery-artifact {
+      font-size: 90px;
+      animation: artifactReveal 1.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 0 40px rgba(201, 162, 39, 0.9));
+      z-index: 10;
+    }
+    @keyframes artifactReveal {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; filter: blur(30px) drop-shadow(0 0 0px rgba(201, 162, 39, 0)); }
+      60% { transform: scale(1.3) rotate(15deg); opacity: 1; filter: blur(0) drop-shadow(0 0 60px rgba(201, 162, 39, 1)); }
+      80% { transform: scale(0.95) rotate(-5deg); }
+      100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 40px rgba(201, 162, 39, 0.9)); }
+    }
+    
+    .discovery-text {
+      text-align: center;
+      z-index: 10;
+      animation: textReveal 0.8s ease-out 0.6s both;
+    }
+    @keyframes textReveal {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .discovery-headline {
+      color: #c9a227;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 20px rgba(201, 162, 39, 0.5);
+    }
+    .discovery-name {
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-shadow: 0 0 30px rgba(201, 162, 39, 0.6);
+    }
+    .discovery-rarity {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .discovery-age {
+      color: #aaa;
+      font-size: 0.9rem;
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+    .discovery-first {
+      color: #81c784;
+      font-size: 0.85rem;
+      padding: 10px 20px;
+      background: rgba(129, 199, 132, 0.15);
+      border: 1px solid rgba(129, 199, 132, 0.3);
+      border-radius: 25px;
+      margin-bottom: 15px;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.8; box-shadow: 0 0 10px rgba(129, 199, 132, 0.2); }
+      50% { opacity: 1; box-shadow: 0 0 25px rgba(129, 199, 132, 0.4); }
+    }
+    
+    .discovery-stats {
+      display: flex;
+      gap: 25px;
+      margin: 12px 0;
+    }
+    .discovery-stat { text-align: center; }
+    .discovery-stat-value {
+      color: #c9a227;
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+    .discovery-stat-label {
+      color: #666;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .discovery-quote {
+      color: #888;
+      font-size: 0.8rem;
+      font-style: italic;
+      max-width: 300px;
+      text-align: center;
+      margin: 10px 0;
+      line-height: 1.4;
+    }
+    
+    .discovery-continue {
+      background: linear-gradient(135deg, #c9a227, #a68523);
+      color: #1a1a2e;
+      border: none;
+      padding: 14px 35px;
+      border-radius: 30px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+      animation: buttonPulse 2s ease-in-out infinite;
+      transition: transform 0.2s;
+    }
+    .discovery-continue:hover { transform: scale(1.05); }
+    @keyframes buttonPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(201, 162, 39, 0.5); }
+      50% { box-shadow: 0 0 40px rgba(201, 162, 39, 0.9); }
+    }
+    
+    .screen-flash {
+      position: fixed;
+      inset: 0;
+      background: #fffde7;
+      z-index: 5000;
+      animation: flash 0.6s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes flash {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    .screen-shake { animation: shake 0.6s cubic-bezier(.36,.07,.19,.97); }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-8px) rotate(-0.5deg); }
+      20%, 40%, 60%, 80% { transform: translateX(8px) rotate(0.5deg); }
+    }
+    
+    /* Legacy cleaning support */
+    .cleaning-overlay { display: none; }
     
     /* Cutscene */
     .cutscene-overlay {
@@ -413,18 +749,41 @@
     
     /* Map markers */
     .player-marker { 
-      width: 24px; 
-      height: 24px; 
-      background: #c9a227; 
-      border: 3px solid #fff; 
-      border-radius: 50%; 
-      box-shadow: 0 0 20px rgba(201, 162, 39, 0.8);
-      transition: transform 0.15s ease-out;
+      width: 28px; 
+      height: 28px; 
+      position: relative;
     }
-    .player-marker-container {
-      transition: transform 0.15s ease-out;
+    /* Head */
+    .player-marker::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: linear-gradient(135deg, #f5d0a9 60%, #e8c090 100%);
+      border: 2px solid #d4a574;
+      border-radius: 50%;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      z-index: 2;
     }
-    .player-pulse { position: absolute; width: 70px; height: 70px; background: rgba(201, 162, 39, 0.25); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: pulse-ring 2s infinite; }
+    /* Body/shoulders */
+    .player-marker::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 12px;
+      background: linear-gradient(180deg, #5a9fe9 0%, #4a90d9 50%, #3a80c9 100%);
+      border: 2px solid #3a7bc8;
+      border-radius: 6px 6px 3px 3px;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      z-index: 1;
+    }
+    .player-pulse { position: absolute; width: 60px; height: 60px; background: rgba(74, 144, 217, 0.25); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: pulse-ring 2s infinite; pointer-events: none; }
     @keyframes pulse-ring { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
     .artifact-marker { font-size: 36px; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); cursor: pointer; padding: 10px; margin: -10px; }
     .artifact-marker:hover { transform: scale(1.3); }
@@ -704,6 +1063,13 @@
       artifactMarkers: [],
       showingModal: null,
       cleaningArtifact: null,
+      // Excavation system state
+      excavationPhase: 0, // 0=not excavating, 1=survey, 2=excavate, 3=brush, 4=document
+      excavationLayer: 0, // 0=topsoil, 1=dark soil, 2=midden, 3=subsoil
+      excavationProgress: 0,
+      selectedTool: 'trowel',
+      fieldNotes: [],
+      discoveryPending: null,
       showingCutscene: null,
       foundArtifact: null,
       showLevelUp: false,
@@ -712,15 +1078,43 @@
       minigameScore: 0,
       minigameTimer: 0,
       minigameActive: false,
-      zoomLevel: 17,
+      zoomLevel: 13,
       // Game-specific state
       gameState: {}
     };
 
     const COLLECT_DISTANCE = 50;
-    const SPAWN_RADIUS_MIN = 30;
-    const SPAWN_RADIUS_MAX = 250;
     const ARTIFACT_COUNT = 12;
+    
+    // Bay Area locations - historic Ohlone sites and culturally significant areas
+    const BAY_AREA_SITES = [
+      // Oakland / East Bay
+      { lat: 37.8044, lon: -122.2712, name: 'Lake Merritt Shellmound' },
+      { lat: 37.8324, lon: -122.2639, name: 'Temescal Creek Village' },
+      { lat: 37.7749, lon: -122.2194, name: 'San Leandro Shell Midden' },
+      { lat: 37.8716, lon: -122.2727, name: 'Berkeley Shellmound' },
+      { lat: 37.9052, lon: -122.0572, name: 'Walnut Creek Area' },
+      // San Francisco
+      { lat: 37.7694, lon: -122.4862, name: 'Ocean Beach Dunes' },
+      { lat: 37.8029, lon: -122.4484, name: 'Presidio Village Site' },
+      { lat: 37.7599, lon: -122.4148, name: 'Mission Dolores Ohlone Site' },
+      { lat: 37.7275, lon: -122.3930, name: 'Candlestick Point' },
+      // South Bay
+      { lat: 37.4419, lon: -122.1430, name: 'Palo Alto Shellmound' },
+      { lat: 37.3382, lon: -121.8863, name: 'San Jose Pueblo Site' },
+      { lat: 37.4849, lon: -122.2278, name: 'Coyote Hills Village' },
+      { lat: 37.5585, lon: -122.2711, name: 'Hayward Shell Midden' },
+      // North Bay
+      { lat: 37.9735, lon: -122.5311, name: 'San Rafael Village' },
+      { lat: 38.0724, lon: -122.5298, name: 'Novato Creek Site' },
+      { lat: 38.2975, lon: -122.2869, name: 'Napa Valley Trade Route' },
+      // Peninsula
+      { lat: 37.6213, lon: -122.3790, name: 'San Mateo Shellmound' },
+      { lat: 37.5024, lon: -122.2523, name: 'Fremont Mission Site' },
+      // Marin Headlands
+      { lat: 37.8324, lon: -122.4795, name: 'Marin Headlands Camp' },
+      { lat: 37.8562, lon: -122.4783, name: 'Sausalito Fishing Village' },
+    ];
 
     // ============================================
     // UTILITIES
@@ -745,13 +1139,27 @@
       const options = ARTIFACT_TYPES.filter(a => a.rarity === rarity);
       return options[Math.floor(Math.random() * options.length)];
     }
-    function spawnArtifactNear(lat, lon) {
-      const angle = Math.random() * 2 * Math.PI;
-      const distance = randomInRange(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX);
-      const latOff = (distance * Math.cos(angle)) / 111320;
-      const lonOff = (distance * Math.sin(angle)) / (111320 * Math.cos(lat * Math.PI / 180));
-      return { id: Date.now() + Math.random(), lat: lat + latOff, lon: lon + lonOff, ...pickArtifactType() };
+    
+    // Spawn artifact at a random Bay Area site with slight offset
+    function spawnArtifactAtSite() {
+      const site = BAY_AREA_SITES[Math.floor(Math.random() * BAY_AREA_SITES.length)];
+      // Add small random offset (within ~200m)
+      const latOff = (Math.random() - 0.5) * 0.004;
+      const lonOff = (Math.random() - 0.5) * 0.004;
+      return { 
+        id: Date.now() + Math.random(), 
+        lat: site.lat + latOff, 
+        lon: site.lon + lonOff, 
+        siteName: site.name,
+        ...pickArtifactType() 
+      };
     }
+    
+    // Legacy function for compatibility - now spawns at Bay Area sites
+    function spawnArtifactNear(lat, lon) {
+      return spawnArtifactAtSite();
+    }
+    
     function getLevelInfo(xp) {
       let cur = LEVELS[0];
       for (const l of LEVELS) { if (xp >= l.xpRequired) cur = l; else break; }
@@ -763,7 +1171,17 @@
     // GAME LOGIC
     // ============================================
     function initArtifacts() {
-      while (state.artifacts.length < ARTIFACT_COUNT) state.artifacts.push(spawnArtifactNear(state.playerPos.lat, state.playerPos.lon));
+      // Spawn artifacts at different Bay Area sites
+      const usedSites = new Set();
+      while (state.artifacts.length < ARTIFACT_COUNT) {
+        const artifact = spawnArtifactAtSite();
+        // Try to avoid duplicate sites
+        const siteKey = `${Math.round(artifact.lat * 100)},${Math.round(artifact.lon * 100)}`;
+        if (!usedSites.has(siteKey) || usedSites.size >= BAY_AREA_SITES.length) {
+          state.artifacts.push(artifact);
+          usedSites.add(siteKey);
+        }
+      }
       updateArtifactMarkers();
     }
 
@@ -785,20 +1203,35 @@
       
       state.showingCutscene = null;
       
-      state.collection.push({ ...artifact, collectedAt: new Date().toISOString() });
+      // Check if this artifact was already collected via the new discovery system
+      // (indicated by xpGained being pre-set)
+      const alreadyCollected = artifact.xpGained !== undefined;
       
-      const xpGained = artifact.xp || XP_BY_RARITY[artifact.rarity];
-      const oldLevel = getLevelInfo(state.xp).level;
-      state.xp += xpGained;
-      const newLevelInfo = getLevelInfo(state.xp);
-      
-      if (newLevelInfo.level > oldLevel) { state.showLevelUp = true; state.newLevel = newLevelInfo; }
-      if (artifact.minigame && !state.unlockedMinigames.includes(artifact.minigame)) state.unlockedMinigames.push(artifact.minigame);
-      
-      checkAchievements();
-      saveGame();
-      state.artifacts = state.artifacts.filter(a => a.id !== artifact.id);
-      state.foundArtifact = { ...artifact, xpGained };
+      if (!alreadyCollected) {
+        // Old path - collect now
+        state.collection.push({ ...artifact, collectedAt: new Date().toISOString() });
+        
+        const xpGained = artifact.xp || XP_BY_RARITY[artifact.rarity];
+        const oldLevel = getLevelInfo(state.xp).level;
+        state.xp += xpGained;
+        const newLevelInfo = getLevelInfo(state.xp);
+        
+        if (newLevelInfo.level > oldLevel) { state.showLevelUp = true; state.newLevel = newLevelInfo; }
+        if (artifact.minigame && !state.unlockedMinigames.includes(artifact.minigame)) state.unlockedMinigames.push(artifact.minigame);
+        
+        checkAchievements();
+        saveGame();
+        state.artifacts = state.artifacts.filter(a => a.id !== artifact.id);
+        state.foundArtifact = { ...artifact, xpGained };
+        
+        // Spawn replacement artifact after a delay
+        setTimeout(() => { 
+          state.artifacts.push(spawnArtifactNear(state.playerPos.lat, state.playerPos.lon)); 
+        }, 500);
+      } else {
+        // New path - already collected in discovery, just show found screen
+        state.foundArtifact = artifact;
+      }
       
       // Clean up map before re-render
       if (state.map) {
@@ -807,11 +1240,6 @@
       }
       
       render();
-      
-      // Spawn replacement artifact after a delay
-      setTimeout(() => { 
-        state.artifacts.push(spawnArtifactNear(state.playerPos.lat, state.playerPos.lon)); 
-      }, 500);
     }
 
     function checkAchievements() {
@@ -2002,6 +2430,11 @@
     // ============================================
     // MOVEMENT & MAP
     // ============================================
+    
+    // Track which arrow keys are currently held down
+    const keysHeld = { up: false, down: false, left: false, right: false };
+    let movementLoopId = null;
+    
     function movePlayer(lat, lon) {
       state.playerPos = { lat, lon };
       if (state.playerMarker) {
@@ -2021,8 +2454,35 @@
       movePlayer(newLat, newLon);
       // Smooth pan to new location
       if (state.map) {
-        state.map.panTo([newLat, newLon], { animate: true, duration: 0.1, easeLinearity: 0.5 });
+        state.map.panTo([newLat, newLon], { animate: true, duration: 0.15, easeLinearity: 0.25 });
       }
+    }
+    
+    function movementLoop() {
+      if (state.showingModal || state.foundArtifact || state.showLevelUp || state.cleaningArtifact || state.discoveryPending || state.showingCutscene || state.playingMinigame) {
+        movementLoopId = requestAnimationFrame(movementLoop);
+        return;
+      }
+      
+      const moveSpeed = 15; // Faster movement for Bay Area traversal (meters per frame)
+      let mN = 0, mE = 0;
+      
+      if (keysHeld.up) mN += moveSpeed;
+      if (keysHeld.down) mN -= moveSpeed;
+      if (keysHeld.right) mE += moveSpeed;
+      if (keysHeld.left) mE -= moveSpeed;
+      
+      // Diagonal movement should be same speed as cardinal
+      if (mN !== 0 && mE !== 0) {
+        mN *= 0.707;
+        mE *= 0.707;
+      }
+      
+      if (mN !== 0 || mE !== 0) {
+        movePlayerByMeters(mN, mE);
+      }
+      
+      movementLoopId = requestAnimationFrame(movementLoop);
     }
 
     function initMap() {
@@ -2031,32 +2491,37 @@
         zoomControl: true,
         zoomAnimation: true,
         markerZoomAnimation: true,
-        zoomAnimationThreshold: 4
+        zoomAnimationThreshold: 4,
+        dragging: false,        // Disable map dragging
+        doubleClickZoom: false  // Disable double-click zoom
       }).setView([lat, lon], state.zoomLevel);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 20
       }).addTo(state.map);
       state.radiusCircle = L.circle([lat, lon], { radius: COLLECT_DISTANCE, color: '#c9a227', fillColor: '#c9a227', fillOpacity: 0.1, weight: 2, dashArray: '5, 5' }).addTo(state.map);
-      state.playerMarker = L.marker([lat, lon], { icon: L.divIcon({ className: '', html: '<div class="player-pulse"></div><div class="player-marker"></div>', iconSize: [24, 24], iconAnchor: [12, 12] }), zIndexOffset: 1000 }).addTo(state.map);
-      state.map.on('click', e => { 
-        movePlayer(e.latlng.lat, e.latlng.lng); 
-        state.map.panTo(e.latlng, { animate: true, duration: 0.25 }); 
-      });
+      state.playerMarker = L.marker([lat, lon], { icon: L.divIcon({ className: '', html: '<div class="player-pulse"></div><div class="player-marker"></div>', iconSize: [28, 28], iconAnchor: [14, 14] }), zIndexOffset: 1000 }).addTo(state.map);
+      
+      // Arrow key movement only - no clicking
       document.addEventListener('keydown', handleKeydown);
+      document.addEventListener('keyup', handleKeyup);
+      
+      // Start the smooth movement loop
+      movementLoop();
     }
 
     function handleKeydown(e) {
-      if (state.showingModal || state.foundArtifact || state.showLevelUp || state.cleaningArtifact || state.showingCutscene || state.playingMinigame) return;
-      const key = e.key.toLowerCase();
-      let moved = false;
-      const moveAmount = 8; // Smaller, smoother movement
-      if (key === 'w' || key === 'arrowup') { movePlayerByMeters(moveAmount, 0); moved = true; }
-      if (key === 's' || key === 'arrowdown') { movePlayerByMeters(-moveAmount, 0); moved = true; }
-      if (key === 'a' || key === 'arrowleft') { movePlayerByMeters(0, -moveAmount); moved = true; }
-      if (key === 'd' || key === 'arrowright') { movePlayerByMeters(0, moveAmount); moved = true; }
+      const key = e.key;
       
-      // Q = zoom IN (higher zoom number = closer), E = zoom OUT (lower zoom number = further)
-      if (key === 'q') { 
+      // Track arrow key holds for smooth movement
+      if (key === 'ArrowUp') { keysHeld.up = true; e.preventDefault(); }
+      if (key === 'ArrowDown') { keysHeld.down = true; e.preventDefault(); }
+      if (key === 'ArrowLeft') { keysHeld.left = true; e.preventDefault(); }
+      if (key === 'ArrowRight') { keysHeld.right = true; e.preventDefault(); }
+      
+      if (state.showingModal || state.foundArtifact || state.showLevelUp || state.cleaningArtifact || state.discoveryPending || state.showingCutscene || state.playingMinigame) return;
+      
+      // Q = zoom IN, E = zoom OUT
+      if (key.toLowerCase() === 'q') { 
         state.zoomLevel = Math.min(20, state.zoomLevel + 1);
         if (state.map) {
           state.map.flyTo([state.playerPos.lat, state.playerPos.lon], state.zoomLevel, {
@@ -2066,8 +2531,8 @@
           });
         }
       }
-      if (key === 'e') { 
-        state.zoomLevel = Math.max(14, state.zoomLevel - 1);
+      if (key.toLowerCase() === 'e') { 
+        state.zoomLevel = Math.max(10, state.zoomLevel - 1);
         if (state.map) {
           state.map.flyTo([state.playerPos.lat, state.playerPos.lon], state.zoomLevel, {
             animate: true,
@@ -2076,10 +2541,14 @@
           });
         }
       }
-      
-      if (moved) { 
-        e.preventDefault(); 
-      }
+    }
+    
+    function handleKeyup(e) {
+      const key = e.key;
+      if (key === 'ArrowUp') keysHeld.up = false;
+      if (key === 'ArrowDown') keysHeld.down = false;
+      if (key === 'ArrowLeft') keysHeld.left = false;
+      if (key === 'ArrowRight') keysHeld.right = false;
     }
 
     function updateArtifactMarkers() {
@@ -2089,7 +2558,7 @@
         const dist = getDistance(state.playerPos.lat, state.playerPos.lon, artifact.lat, artifact.lon);
         const near = dist <= COLLECT_DISTANCE;
         const marker = L.marker([artifact.lat, artifact.lon], { icon: L.divIcon({ className: `artifact-marker ${near ? 'nearby' : ''}`, html: artifact.emoji, iconSize: [60, 60], iconAnchor: [30, 30] }) }).addTo(state.map);
-        marker.bindPopup(`<div class="artifact-popup"><div class="emoji">${artifact.emoji}</div><div class="name">${artifact.name}</div><div class="buried-hint">Half-buried...</div><div class="distance">${formatDistance(dist)}</div><button class="collect-btn" ${near ? '' : 'disabled'} onclick="window.startDigging('${artifact.id}')">${near ? '🖌️ Excavate!' : 'Get closer'}</button></div>`, { closeButton: false });
+        marker.bindPopup(`<div class="artifact-popup"><div class="emoji">${artifact.emoji}</div><div class="name">${artifact.name}</div>${artifact.siteName ? `<div class="site-name">📍 ${artifact.siteName}</div>` : ''}<div class="buried-hint">Half-buried...</div><div class="distance">${formatDistance(dist)}</div><button class="collect-btn" ${near ? '' : 'disabled'} onclick="window.startDigging('${artifact.id}')">${near ? '🖌️ Excavate!' : 'Get closer'}</button></div>`, { closeButton: false });
         state.artifactMarkers.push(marker);
       });
     }
@@ -3596,15 +4065,16 @@
             <span>${state.xp} XP</span>
           </div>
         </div>
-        <div class="instructions">👆 Tap to move • ${state.artifacts.length} artifacts nearby</div>
+        <div class="instructions">🎮 Use arrow keys to move • ${state.artifacts.length} artifacts nearby</div>
         <div id="map"></div>
-        <div class="key-hint"><kbd>WASD</kbd> move • <kbd>Q</kbd> zoom in • <kbd>E</kbd> zoom out</div>
+        <div class="key-hint"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> move • <kbd>Q</kbd> zoom in • <kbd>E</kbd> zoom out</div>
         <div class="bottom-nav">
           <button class="nav-btn" onclick="showCollection()">📜 Collection</button>
           <button class="nav-btn" onclick="showMinigames()">🎮 Games</button>
           <button class="nav-btn" onclick="showAchievements()">🏆 Badges</button>
         </div>
         ${state.cleaningArtifact ? renderCleaning() : ''}
+        ${state.discoveryPending ? renderDiscovery() : ''}
         ${state.showingCutscene ? renderCutscene() : ''}
         ${state.foundArtifact ? renderFound() : ''}
         ${state.showLevelUp ? renderLevelUp() : ''}
@@ -3616,7 +4086,7 @@
       
       setTimeout(() => {
         const mapEl = document.getElementById('map');
-        if (!state.map && mapEl && !state.cleaningArtifact && !state.showingCutscene && !state.foundArtifact && !state.showLevelUp && !state.playingMinigame && !state.showingModal) { 
+        if (!state.map && mapEl && !state.cleaningArtifact && !state.discoveryPending && !state.showingCutscene && !state.foundArtifact && !state.showLevelUp && !state.playingMinigame && !state.showingModal) { 
           initMap(); 
           initArtifacts(); 
         }
@@ -3626,19 +4096,156 @@
       }, 50);
     }
 
-    function renderCleaning() {
-      return `<div class="cleaning-overlay">
-        <div class="cleaning-title">🖌️ Excavate the Artifact!</div>
-        <div class="cleaning-instructions">Brush back and forth to clear the dirt!</div>
-        <div class="cleaning-area">
-          <div class="artifact-reveal">${state.cleaningArtifact.emoji}</div>
-          <canvas id="dirtCanvas" width="280" height="280"></canvas>
+    function renderExcavation() {
+      const a = state.cleaningArtifact;
+      const layers = [
+        { name: 'Surface (Grass/Debris)', color: '#4a7c59', depth: '0-5cm' },
+        { name: 'Topsoil (Dark Humus)', color: '#3d3428', depth: '5-15cm' },
+        { name: 'Midden Layer (Artifact!)', color: '#5c4a3d', depth: '15-40cm' }
+      ];
+      
+      const tools = [
+        { id: 'trowel', icon: '🔪', name: 'Trowel', desc: 'Dig through layers' },
+        { id: 'brush', icon: '🖌️', name: 'Brush', desc: 'Fine detail work' },
+        { id: 'screen', icon: '🔲', name: 'Screen', desc: 'Find small items' },
+        { id: 'camera', icon: '📷', name: 'Camera', desc: 'Document finds' }
+      ];
+      
+      const phaseInfo = [
+        { title: 'Clear Surface', instruction: 'Click and drag to excavate the grass and debris!' },
+        { title: 'Excavate Topsoil', instruction: 'Keep digging through the dark soil layer...' },
+        { title: 'Reveal Artifact', instruction: 'Artifact found! Carefully brush away the midden!' }
+      ];
+      
+      const phase = state.excavationPhase || 1;
+      const currentPhase = phaseInfo[phase - 1] || phaseInfo[0];
+      
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      
+      return `<div class="excavation-overlay">
+        <div class="excavation-header">
+          <div class="excavation-phase">Phase ${phase} of 3</div>
+          <div class="excavation-title">⛏️ ${currentPhase.title}</div>
+          <div class="excavation-instructions">${currentPhase.instruction}</div>
         </div>
-        <div class="cleaning-progress">
-          <div class="cleaning-progress-bar" id="cleaningBar" style="width: 0%"></div>
+        
+        <div class="dig-site-container">
+          <div class="dig-site">
+            <div class="artifact-reveal ${state.excavationLayer >= 2 ? 'visible' : ''}">${a.emoji}</div>
+            <canvas id="excavationCanvas" width="300" height="300"></canvas>
+            <div class="grid-overlay ${phase >= 1 ? 'visible' : ''}"></div>
+            <div class="unit-label" style="top:2px;left:2px">Unit A1</div>
+            <div class="unit-label" style="top:2px;right:2px">N: 37.804°</div>
+            <div class="unit-label" style="bottom:2px;left:2px">Depth: ${(state.excavationLayer * 12 + state.excavationProgress * 0.12).toFixed(1)}cm</div>
+          </div>
         </div>
-        <div class="cleaning-progress-label" id="cleaningLabel">0% cleared</div>
+        
+        <div class="tool-belt">
+          ${tools.map(t => `
+            <button class="tool-btn ${state.selectedTool === t.id ? 'active' : ''} ${
+              (t.id === 'brush' && state.excavationLayer < 2) || 
+              (t.id === 'camera' && state.excavationLayer < 2) ||
+              (t.id === 'screen' && state.excavationLayer < 1) ? 'disabled' : ''
+            }" onclick="selectTool('${t.id}')" title="${t.desc}">
+              <span class="tool-icon">${t.icon}</span>
+              <span class="tool-name">${t.name}</span>
+            </button>
+          `).join('')}
+        </div>
+        
+        <div class="stratigraphy-panel">
+          <div class="strat-title">📊 Stratigraphy Profile</div>
+          ${layers.map((l, i) => `
+            <div class="layer-row ${state.excavationLayer === i ? 'active' : ''} ${state.excavationLayer > i ? 'complete' : ''}">
+              <div class="layer-color" style="background:${l.color}"></div>
+              <span class="layer-name">${l.name}${state.excavationLayer === i ? ' ← NOW' : ''}</span>
+              <span class="layer-depth">${l.depth}</span>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="excavation-progress">
+          <div class="progress-label">
+            <span>Layer ${state.excavationLayer + 1} of 3</span>
+            <span>${Math.round(state.excavationProgress)}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width:${state.excavationProgress}%"></div>
+          </div>
+        </div>
+        
+        <div class="field-journal">
+          <div class="journal-header">
+            <span class="journal-title">📓 Field Journal</span>
+            <span class="journal-date">${dateStr}</span>
+          </div>
+          ${state.fieldNotes.length === 0 ? 
+            '<div class="journal-entry" style="color:#888;font-style:italic">Begin excavation to record notes...</div>' :
+            state.fieldNotes.slice(-4).map(note => `<div class="journal-entry">${note}</div>`).join('')
+          }
+        </div>
+        
+        <button class="nav-btn" style="margin-top:10px" onclick="cancelExcavation()">❌ Abandon Excavation</button>
       </div>`;
+    }
+    
+    function renderDiscovery() {
+      const a = state.discoveryPending;
+      if (!a) return '';
+      
+      const ageYears = 200 + Math.floor(Math.random() * 800);
+      const particles = Array(30).fill(0).map((_, i) => {
+        const left = Math.random() * 100;
+        const delay = Math.random() * 2;
+        const size = 4 + Math.random() * 8;
+        return `<div class="particle" style="left:${left}%;animation-delay:${delay}s;width:${size}px;height:${size}px;background:${Math.random() > 0.5 ? '#ffd700' : '#c9a227'}"></div>`;
+      }).join('');
+      
+      return `<div class="discovery-overlay" id="discoveryOverlay">
+        <div class="discovery-rays"></div>
+        <div class="discovery-glow"></div>
+        <div class="discovery-particles">${particles}</div>
+        
+        <div class="discovery-artifact">${a.emoji}</div>
+        
+        <div class="discovery-text">
+          <div class="discovery-headline">✨ Archaeological Discovery ✨</div>
+          <div class="discovery-name">${a.name}</div>
+          <div class="discovery-rarity rarity-${a.rarity}">${a.rarity}</div>
+          <div class="discovery-age">Estimated age: ~${ageYears} years old</div>
+          
+          <div class="discovery-first">
+            👁️ You are the first person to see this artifact in ${ageYears} years
+          </div>
+          
+          <div class="discovery-stats">
+            <div class="discovery-stat">
+              <div class="discovery-stat-value">+${a.xpGained || a.xp}</div>
+              <div class="discovery-stat-label">XP Earned</div>
+            </div>
+            <div class="discovery-stat">
+              <div class="discovery-stat-value">${state.collection.length + 1}</div>
+              <div class="discovery-stat-label">Total Finds</div>
+            </div>
+            <div class="discovery-stat">
+              <div class="discovery-stat-value">A1</div>
+              <div class="discovery-stat-label">Unit</div>
+            </div>
+          </div>
+          
+          <div class="discovery-quote">"${a.culturalNote}"</div>
+        </div>
+        
+        <button class="discovery-continue" onclick="completeDiscovery()">
+          📜 Add to Collection
+        </button>
+      </div>`;
+    }
+
+    function renderCleaning() {
+      // Redirect to new excavation system
+      return renderExcavation();
     }
 
     function renderCutscene() {
@@ -3718,42 +4325,146 @@
     }
 
     function setupCleaning() {
-      const canvas = document.getElementById('dirtCanvas');
+      // Redirect to new excavation system
+      setupExcavation();
+    }
+    
+    function setupExcavation() {
+      const canvas = document.getElementById('excavationCanvas');
       if (!canvas || !state.cleaningArtifact) return;
       const ctx = canvas.getContext('2d');
       const W = canvas.width, H = canvas.height;
       
-      // Prevent double-triggering
+      // Initialize excavation state
+      state.excavationPhase = 1;
+      state.excavationLayer = 0;
+      state.excavationProgress = 0;
+      state.selectedTool = 'trowel';
+      state.fieldNotes = [
+        '📍 Unit A1 established',
+        '🔪 Starting with trowel - clear the surface layer first!'
+      ];
+      
       let hasCompleted = false;
+      let layerPixels = []; // Track cleared pixels per layer
+      let artifactRevealed = 0;
       
-      // Clear canvas to fully transparent first
-      ctx.clearRect(0, 0, W, H);
+      // Layer definitions with colors (3 layers total)
+      const layers = [
+        { colors: ['#4a7c59', '#3d6b4a', '#5a8c69', '#2d5a3a'], name: 'Surface Layer' },
+        { colors: ['#3d3428', '#2d2418', '#4d4438', '#1d1408'], name: 'Topsoil' },
+        { colors: ['#5c4a3d', '#6c5a4d', '#4c3a2d', '#7c6a5d'], name: 'Midden Layer' }
+      ];
       
-      // Draw ONLY dirt on the canvas - the artifact emoji is in HTML behind the canvas
-      // When we erase the dirt, the HTML emoji will show through
-      
-      // Base dirt layer
-      ctx.fillStyle = '#5D4E37';
-      ctx.fillRect(0, 0, W, H);
-      
-      // Add dirt texture variation
-      for (let i = 0; i < 300; i++) {
-        ctx.fillStyle = ['#4A3F2F', '#6B5A45', '#3a3025', '#5D4E37'][Math.floor(Math.random() * 4)];
-        ctx.beginPath();
-        ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 12 + 4, 0, Math.PI * 2);
-        ctx.fill();
+      // Draw ONLY the current layer (one layer at a time)
+      function drawLayers() {
+        ctx.clearRect(0, 0, W, H);
+        
+        const currentLayer = state.excavationLayer;
+        
+        // If we've finished all layers, show completed state
+        if (currentLayer >= 3) {
+          ctx.fillStyle = '#5c4a3d';
+          ctx.fillRect(0, 0, W, H);
+          return;
+        }
+        
+        const layer = layers[currentLayer];
+        
+        // Fill base color for current layer
+        ctx.fillStyle = layer.colors[0];
+        ctx.fillRect(0, 0, W, H);
+        
+        // Add texture
+        for (let i = 0; i < 200; i++) {
+          ctx.fillStyle = layer.colors[Math.floor(Math.random() * layer.colors.length)];
+          const px = Math.random() * W;
+          const py = Math.random() * H;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.random() * 12 + 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Add layer-specific details
+        if (currentLayer === 0) {
+          // Grass on surface
+          ctx.strokeStyle = '#2d5a3a';
+          ctx.lineWidth = 2;
+          for (let g = 0; g < 60; g++) {
+            const gx = Math.random() * W;
+            const gy = Math.random() * H;
+            ctx.beginPath();
+            ctx.moveTo(gx, gy);
+            ctx.lineTo(gx + (Math.random() - 0.5) * 8, gy - 8 - Math.random() * 12);
+            ctx.stroke();
+          }
+          // Small rocks
+          ctx.fillStyle = '#555';
+          for (let r = 0; r < 15; r++) {
+            ctx.beginPath();
+            ctx.ellipse(Math.random() * W, Math.random() * H, Math.random() * 6 + 2, Math.random() * 4 + 2, Math.random() * Math.PI, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (currentLayer === 1) {
+          // Roots in topsoil
+          ctx.strokeStyle = '#5a4a3a';
+          ctx.lineWidth = 2;
+          for (let r = 0; r < 20; r++) {
+            const rx = Math.random() * W;
+            const ry = Math.random() * H;
+            ctx.beginPath();
+            ctx.moveTo(rx, ry);
+            ctx.quadraticCurveTo(rx + Math.random() * 30, ry + Math.random() * 20, rx + Math.random() * 50, ry + Math.random() * 30);
+            ctx.stroke();
+          }
+        } else if (currentLayer === 2) {
+          // Shell fragments in midden
+          ctx.fillStyle = '#e8e0d0';
+          for (let s = 0; s < 30; s++) {
+            ctx.beginPath();
+            ctx.ellipse(
+              Math.random() * W, 
+              Math.random() * H,
+              Math.random() * 10 + 4,
+              Math.random() * 6 + 3,
+              Math.random() * Math.PI,
+              0, Math.PI * 2
+            );
+            ctx.fill();
+          }
+          // Small bone fragments
+          ctx.fillStyle = '#d4c8b8';
+          for (let b = 0; b < 15; b++) {
+            ctx.fillRect(
+              Math.random() * W,
+              Math.random() * H,
+              Math.random() * 18 + 6,
+              Math.random() * 4 + 2
+            );
+          }
+          // Charcoal flecks
+          ctx.fillStyle = '#222';
+          for (let c = 0; c < 20; c++) {
+            ctx.beginPath();
+            ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 3 + 1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        
+        // Show artifact peeking through in midden layer only
+        if (currentLayer === 2) {
+          const revealDiv = document.querySelector('.artifact-reveal');
+          if (revealDiv) revealDiv.classList.add('visible');
+        }
       }
       
-      // Add pebbles
-      for (let i = 0; i < 25; i++) {
-        ctx.fillStyle = '#2a2520';
-        ctx.beginPath();
-        ctx.ellipse(Math.random() * W, Math.random() * H, Math.random() * 6 + 3, Math.random() * 4 + 2, Math.random() * Math.PI, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      drawLayers();
       
-      let drawing = false, lastX = 0, lastY = 0, lastPositions = [];
-      let totalCleared = 0;
+      // Set initial cursor for trowel
+      canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\'%3E%3Ctext y=\'24\' font-size=\'24\'%3E🔪%3C/text%3E%3C/svg%3E") 16 16, crosshair';
+      
+      // Cleared areas map
+      let clearedMap = new Array(Math.ceil(W/10)).fill(null).map(() => new Array(Math.ceil(H/10)).fill(0));
       
       function getPos(e) {
         const rect = canvas.getBoundingClientRect();
@@ -3762,65 +4473,367 @@
         return { x: (touch.clientX - rect.left) * scaleX, y: (touch.clientY - rect.top) * scaleY };
       }
       
-      function brush(x, y) {
-        if (hasCompleted) return; // Prevent further processing after completion
+      function dig(x, y) {
+        if (hasCompleted) return;
         
-        lastPositions.push({ x, y });
-        if (lastPositions.length > 8) lastPositions.shift();
-        if (lastPositions.length < 3) return;
+        const tool = state.selectedTool;
+        let radius = 25;
+        let effectiveness = 1;
         
-        let dist = 0;
-        for (let i = 1; i < lastPositions.length; i++) {
-          dist += Math.hypot(lastPositions[i].x - lastPositions[i-1].x, lastPositions[i].y - lastPositions[i-1].y);
+        if (tool === 'trowel') {
+          radius = 30;
+          effectiveness = 1.5;
+        } else if (tool === 'brush') {
+          if (state.excavationLayer < 2) return; // Brush only works on midden layer
+          radius = 20;
+          effectiveness = 0.8;
+        } else if (tool === 'screen') {
+          // Screen finds small items occasionally
+          if (Math.random() < 0.02 && state.excavationLayer >= 1) {
+            addFieldNote('🔍 Found tiny shell bead fragment in screen!');
+            updateJournalDisplay();
+          }
+          return;
+        } else if (tool === 'camera') {
+          // Camera documents
+          addFieldNote('📷 Photo taken: Layer ' + (state.excavationLayer + 1) + ' at depth ' + (state.excavationLayer * 12).toFixed(0) + 'cm');
+          updateJournalDisplay();
+          return;
         }
-        if (dist < 10) return; // Need brushing motion
         
-        // Erase dirt pixels to make them transparent
-        // This reveals the HTML artifact-reveal div underneath
+        // Clear area
         ctx.globalCompositeOperation = 'destination-out';
         ctx.fillStyle = 'rgba(255,255,255,1)';
         ctx.beginPath();
-        ctx.arc(x, y, 28, 0, Math.PI * 2);
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalCompositeOperation = 'source-over';
         
-        totalCleared += 1;
-        const pct = Math.min(100, totalCleared * 0.7);
+        // Track cleared area
+        const gridX = Math.floor(x / 10);
+        const gridY = Math.floor(y / 10);
+        if (gridX >= 0 && gridX < clearedMap.length && gridY >= 0 && gridY < clearedMap[0].length) {
+          if (clearedMap[gridX][gridY] === 0) {
+            clearedMap[gridX][gridY] = 1;
+            state.excavationProgress += effectiveness * 0.5;
+          }
+        }
         
-        const bar = document.getElementById('cleaningBar');
-        const label = document.getElementById('cleaningLabel');
-        if (bar) bar.style.width = pct + '%';
-        if (label) label.textContent = Math.round(pct) + '% cleared';
+        // Update progress
+        state.excavationProgress = Math.min(100, state.excavationProgress);
         
-        if (pct >= 65 && !hasCompleted) {
-          hasCompleted = true; // Prevent multiple triggers
-          setTimeout(() => {
-            if (state.cleaningArtifact) {
-              showCutscene(state.cleaningArtifact);
-            }
-          }, 300);
+        // Update progress bar directly without re-rendering
+        const progressFill = document.querySelector('.progress-bar-fill');
+        const progressLabel = document.querySelector('.progress-label span:last-child');
+        const layerLabel = document.querySelector('.progress-label span:first-child');
+        const depthLabel = document.querySelector('.unit-label:last-of-type');
+        
+        if (progressFill) progressFill.style.width = state.excavationProgress + '%';
+        if (progressLabel) progressLabel.textContent = Math.round(state.excavationProgress) + '%';
+        if (layerLabel) layerLabel.textContent = 'Layer ' + (state.excavationLayer + 1) + ' of 3';
+        
+        // Calculate depth based on layer and progress within that layer
+        const layerDepths = [5, 15, 40]; // cm at bottom of each layer
+        const layerStarts = [0, 5, 15]; // cm at top of each layer
+        const currentDepth = layerStarts[state.excavationLayer] + (state.excavationProgress / 100) * (layerDepths[state.excavationLayer] - layerStarts[state.excavationLayer]);
+        if (depthLabel) depthLabel.textContent = 'Depth: ' + currentDepth.toFixed(1) + 'cm';
+        
+        // Check layer completion
+        if (state.excavationProgress >= 95) {
+          advanceLayer();
         }
       }
       
-      function start(e) { drawing = true; lastPositions = []; const p = getPos(e); lastX = p.x; lastY = p.y; e.preventDefault(); }
-      function move(e) {
-        if (!drawing || hasCompleted) return;
+      function updateJournalDisplay() {
+        const journal = document.querySelector('.field-journal');
+        if (!journal) return;
+        
+        const today = new Date();
+        const dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        const entries = state.fieldNotes.length === 0 
+          ? '<div class="journal-entry" style="color:#888;font-style:italic">Begin excavation to record notes...</div>'
+          : state.fieldNotes.slice(-4).map(note => `<div class="journal-entry">${note}</div>`).join('');
+        
+        journal.innerHTML = `
+          <div class="journal-header">
+            <span class="journal-title">📓 Field Journal</span>
+            <span class="journal-date">${dateStr}</span>
+          </div>
+          ${entries}
+        `;
+      }
+      
+      function updateLayerDisplay() {
+        const rows = document.querySelectorAll('.layer-row');
+        rows.forEach((row, i) => {
+          row.classList.remove('active', 'complete');
+          if (i === state.excavationLayer) row.classList.add('active');
+          if (i < state.excavationLayer) row.classList.add('complete');
+        });
+      }
+      
+      function advanceLayer() {
+        const previousLayer = state.excavationLayer;
+        state.excavationLayer++;
+        state.excavationProgress = 0;
+        clearedMap = new Array(Math.ceil(W/10)).fill(null).map(() => new Array(Math.ceil(H/10)).fill(0));
+        
+        const layerNames = ['Surface', 'Topsoil', 'Midden Layer'];
+        
+        // Check if we just completed the midden layer (layer 2) - that's where artifacts are!
+        if (previousLayer === 2) {
+          hasCompleted = true;
+          addFieldNote('🎉 ARTIFACT FULLY EXCAVATED!');
+          triggerDiscovery();
+          return;
+        }
+        
+        // Still have layers to go
+        if (state.excavationLayer < 3) {
+          addFieldNote('⬇️ Layer complete! Now excavating: ' + layerNames[state.excavationLayer]);
+          state.excavationPhase = state.excavationLayer + 1;
+          drawLayers();
+          updateLayerDisplay();
+          updateJournalDisplay();
+          
+          // Update phase text
+          const phaseEl = document.querySelector('.excavation-phase');
+          const titleEl = document.querySelector('.excavation-title');
+          const instrEl = document.querySelector('.excavation-instructions');
+          if (phaseEl) phaseEl.textContent = 'Phase ' + state.excavationPhase + ' of 3';
+          if (titleEl) {
+            const titles = ['Clear Surface', 'Excavate Topsoil', 'Reveal Artifact'];
+            titleEl.textContent = '⛏️ ' + (titles[state.excavationPhase - 1] || titles[0]);
+          }
+          if (instrEl) {
+            const instructions = [
+              'Click and drag to excavate the grass and debris!',
+              'Keep digging through the dark soil layer...',
+              'Artifact found! Carefully brush away the midden!'
+            ];
+            instrEl.textContent = instructions[state.excavationPhase - 1] || instructions[0];
+          }
+        }
+        
+        // Entering midden layer - artifact is here!
+        if (state.excavationLayer === 2) {
+          addFieldNote('⚠️ ARTIFACT DETECTED in midden layer!');
+          addFieldNote('💡 Tip: Switch to brush for careful excavation');
+          state.selectedTool = 'brush';
+          state.excavationPhase = 3;
+          updateJournalDisplay();
+          
+          // Update tool selection visually
+          document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.classList.remove('active', 'disabled');
+            if (btn.getAttribute('onclick')?.includes('brush')) {
+              btn.classList.add('active');
+            }
+          });
+          
+          // Update cursor to brush
+          const canvas = document.getElementById('excavationCanvas');
+          if (canvas) {
+            canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\'%3E%3Ctext y=\'24\' font-size=\'24\'%3E🖌️%3C/text%3E%3C/svg%3E") 16 16, crosshair';
+          }
+          
+          // Show artifact peeking through
+          const artifactReveal = document.querySelector('.artifact-reveal');
+          if (artifactReveal) artifactReveal.classList.add('visible');
+        }
+      }
+      
+      function addFieldNote(note) {
+        state.fieldNotes.push(note);
+        if (state.fieldNotes.length > 10) state.fieldNotes.shift();
+      }
+      
+      let isDigging = false;
+      let lastX = 0, lastY = 0;
+      let digInterval = null;
+      
+      function startDig(e) {
+        isDigging = true;
         const p = getPos(e);
-        const steps = Math.max(1, Math.floor(Math.hypot(p.x - lastX, p.y - lastY) / 5));
-        for (let i = 0; i <= steps; i++) brush(lastX + (p.x - lastX) * i / steps, lastY + (p.y - lastY) * i / steps);
-        lastX = p.x; lastY = p.y;
+        lastX = p.x;
+        lastY = p.y;
+        
+        // Dig immediately on click
+        dig(p.x, p.y);
+        dig(p.x + 5, p.y);
+        dig(p.x - 5, p.y);
+        dig(p.x, p.y + 5);
+        dig(p.x, p.y - 5);
+        
+        // Continue digging while holding
+        if (digInterval) clearInterval(digInterval);
+        digInterval = setInterval(() => {
+          if (isDigging && !hasCompleted) {
+            dig(lastX + (Math.random() - 0.5) * 20, lastY + (Math.random() - 0.5) * 20);
+          }
+        }, 50);
+        
         e.preventDefault();
       }
-      function end() { drawing = false; lastPositions = []; }
       
-      canvas.addEventListener('mousedown', start);
-      canvas.addEventListener('mousemove', move);
-      canvas.addEventListener('mouseup', end);
-      canvas.addEventListener('mouseleave', end);
-      canvas.addEventListener('touchstart', start);
-      canvas.addEventListener('touchmove', move);
-      canvas.addEventListener('touchend', end);
+      function moveDig(e) {
+        if (!isDigging || hasCompleted) return;
+        const p = getPos(e);
+        
+        // Interpolate for smooth digging
+        const dist = Math.hypot(p.x - lastX, p.y - lastY);
+        const steps = Math.max(1, Math.floor(dist / 8));
+        for (let i = 1; i <= steps; i++) {
+          dig(lastX + (p.x - lastX) * i / steps, lastY + (p.y - lastY) * i / steps);
+        }
+        
+        lastX = p.x;
+        lastY = p.y;
+        e.preventDefault();
+      }
+      
+      function endDig() {
+        isDigging = false;
+        if (digInterval) {
+          clearInterval(digInterval);
+          digInterval = null;
+        }
+      }
+      
+      canvas.addEventListener('mousedown', startDig);
+      canvas.addEventListener('mousemove', moveDig);
+      canvas.addEventListener('mouseup', endDig);
+      canvas.addEventListener('mouseleave', endDig);
+      canvas.addEventListener('touchstart', startDig);
+      canvas.addEventListener('touchmove', moveDig);
+      canvas.addEventListener('touchend', endDig);
     }
+    
+    window.selectTool = function(toolId) {
+      // Check if tool is allowed
+      if (toolId === 'brush' && state.excavationLayer < 2) return;
+      if (toolId === 'camera' && state.excavationLayer < 2) return;
+      if (toolId === 'screen' && state.excavationLayer < 1) return;
+      
+      state.selectedTool = toolId;
+      
+      // Update tool buttons visually without re-rendering
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick')?.includes(toolId)) {
+          btn.classList.add('active');
+        }
+      });
+      
+      // Update cursor based on tool
+      const canvas = document.getElementById('excavationCanvas');
+      if (canvas) {
+        if (toolId === 'trowel') {
+          canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\'%3E%3Ctext y=\'24\' font-size=\'24\'%3E🔪%3C/text%3E%3C/svg%3E") 16 16, crosshair';
+        } else if (toolId === 'brush') {
+          canvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\'%3E%3Ctext y=\'24\' font-size=\'24\'%3E🖌️%3C/text%3E%3C/svg%3E") 16 16, crosshair';
+        } else {
+          canvas.style.cursor = 'crosshair';
+        }
+      }
+      
+      // Add field note
+      const toolNames = { trowel: 'Trowel', brush: 'Brush', screen: 'Screen', camera: 'Camera' };
+      state.fieldNotes.push('🔧 Switched to ' + toolNames[toolId]);
+      
+      // Update journal without full re-render
+      const journalEntries = document.querySelectorAll('.journal-entry');
+      if (journalEntries.length > 0) {
+        const journal = document.querySelector('.field-journal');
+        if (journal) {
+          const header = journal.querySelector('.journal-header');
+          if (header) {
+            const entries = state.fieldNotes.slice(-4).map(note => `<div class="journal-entry">${note}</div>`).join('');
+            journal.innerHTML = header.outerHTML + entries;
+          }
+        }
+      }
+    };
+    
+    window.cancelExcavation = function() {
+      state.cleaningArtifact = null;
+      state.excavationPhase = 0;
+      state.excavationLayer = 0;
+      state.excavationProgress = 0;
+      state.fieldNotes = [];
+      render();
+    };
+    
+    function triggerDiscovery() {
+      const artifact = state.cleaningArtifact;
+      
+      // Add screen flash effect
+      const flash = document.createElement('div');
+      flash.className = 'screen-flash';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 600);
+      
+      // Add screen shake
+      document.body.classList.add('screen-shake');
+      setTimeout(() => document.body.classList.remove('screen-shake'), 600);
+      
+      // Prepare discovery data
+      const xpGained = Math.round(artifact.xp * (1 + Math.random() * 0.5));
+      state.discoveryPending = { ...artifact, xpGained };
+      
+      // Clear cleaning state and show discovery
+      state.cleaningArtifact = null;
+      state.excavationPhase = 0;
+      
+      render();
+    }
+    
+    window.completeDiscovery = function() {
+      const artifact = state.discoveryPending;
+      if (!artifact) return;
+      
+      // Add to collection
+      state.collection.push({ ...artifact, collectedAt: new Date().toISOString() });
+      
+      // Award XP
+      const oldLevel = getLevelInfo(state.xp);
+      state.xp += artifact.xpGained;
+      const newLevel = getLevelInfo(state.xp);
+      
+      // Check level up
+      if (newLevel.level > oldLevel.level) {
+        state.showLevelUp = true;
+        state.newLevel = newLevel;
+      }
+      
+      // Unlock minigame if applicable
+      if (artifact.minigame && !state.unlockedMinigames.includes(artifact.minigame)) {
+        state.unlockedMinigames.push(artifact.minigame);
+      }
+      
+      // Remove artifact from map
+      state.artifacts = state.artifacts.filter(a => 
+        !(a.lat === artifact.lat && a.lon === artifact.lon)
+      );
+      
+      // Check achievements
+      checkAchievements();
+      
+      // Spawn replacement
+      state.artifacts.push(spawnArtifactNear(state.playerPos.lat, state.playerPos.lon));
+      
+      // Save game
+      saveGame();
+      
+      // Clear discovery and show cutscene
+      state.discoveryPending = null;
+      
+      // Show cutscene for the artifact
+      showCutscene({ ...artifact, xpGained: artifact.xpGained });
+      
+      updateArtifactMarkers();
+    };
 
     // ============================================
     // ACTIONS
